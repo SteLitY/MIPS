@@ -1,4 +1,7 @@
-#David Chen
+#By David Chen
+#This program takes a user input input in the .data section to set the background color, colors of the 4 mini rectangles and square.
+#The square is in the center of the screen while the rectangles are at each edge of the square.
+
 .data
 frameBuffer:	.space 0x80000 #512 x 256 pixels
 m:		.word	0x19	#user input length (default = 10)
