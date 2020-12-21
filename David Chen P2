@@ -1,5 +1,16 @@
-#David Chen
-#Will not be using frame pointer, but will contain lots of global variables
+#By: David Chen
+
+#This program takes a user input a starting number, a, and a ending number,b.
+#It displays a on the digital LED, then increments the count by 1 all the way up to B.
+#a must be greater than 0, less than b, and less than 100
+#b must be 99 or smaller
+#a and b are in the .data section.
+
+#to run the program in mars, click tools > digital lab sim > Connect to MIPS
+#Then assemble and run it.
+
+
+
 .data
 a:		.word	0	
 b:		.word	99
