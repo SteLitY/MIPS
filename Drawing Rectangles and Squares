@@ -1,6 +1,10 @@
 #By David Chen
+
 #This program takes a user input input in the .data section to set the background color, colors of the 4 mini rectangles and square.
 #The square is in the center of the screen while the rectangles are at each edge of the square.
+
+#To run this program, open MARS, click on tools > bit map display > Connect to MIPS
+#then assemble and run the program. 
 
 .data
 frameBuffer:	.space 0x80000 #512 x 256 pixels
