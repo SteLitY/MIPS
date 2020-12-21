@@ -1,0 +1,160 @@
+#David Chen
+#Will not be using frame pointer, but will contain lots of global variables
+.data
+a:		.word	0	
+b:		.word	99
+
+
+.text
+Main:	
+#load a and b into registers
+lw $s0, a 		#a <- s0
+lw $s1, b		#b <- s1
+
+#Check for valid inputs for both  a and b:  0 <= a <= b <= 99
+addi $t7, $zero, 100	#$t7 <- 100
+slt $t7, $s1, $t7	#s7 <- check if b <= 99
+beq $t7, $zero, Exit	#if b < 99 == false go to Exit
+addi $t7, $s1, 1 	#add one to b. if a = b, then a < b+1
+slt $t7, $s0, $t7	#s2 <- check if a < b+1
+beq $t7, $zero, Exit	#if (a < b == false), go to Exit 
+addi $t7, $s0, 1	#s2 <- a++
+slt $t7, $zero, $t7 	#s2 <- check if a+1 < 0
+beq $t7, $zero, Exit 	#if (a <= 0) == false go to Exit
+
+#left: 0xFFFF0011	right: 0xFFFF0010
+la $s3, 0xFFFF0011	#s3 <- left digit
+la $s4, 0xFFFF0010	#s4 <- right digit
+
+
+#to avoid division, I can also use slti for 10,20,30,40,50,60,70,80,100. 
+#example: if a == 11, then it is not less than 10, but it is less than 20. so i can set left digit == 1, right digit == a-10
+#example 2: if a == 21, then it is not less than 10 nor 20, but it is less than 30. so i can set left digit == 2, rigit digit == a-20
+#division just has fewer lines and is easier to read.
+
+
+#s5 = left digit, s6 = right digit
+addi $t7, $zero, 10 	#t7 <- 10
+div $s0, $t7		#a/10. mflo == quotient, mfhi == remainder
+mflo $s5		#s5 == quotient, which is for the left digit
+mfhi $s6 		#s6 == remainder which is for the right digit
+
+
+InsertDigits: #this is a loop
+#checks to stop loop
+addi $t0, $s1, 1	#t0 <- b++
+slt $t7, $s0, $t0	#t7 gets the result of a < b+1
+beq $t7, $zero, Exit	#Exit if a == b.
+
+
+#start with right led then do left. push everything on the stack
+addi $a0, $zero, 1	#a0 <- tell display function that it's the right LED
+add $a1,$s6,$zero	#a1 <- the digit to be displayed for the right LED
+
+
+#push everything on the stack: a0,a1, t07
+addi $sp, $zero, -8	#restore 24 bytes for 6 registers
+sw $t0, 4($sp)		#save t0 procedure convention
+sw $t7,	0($sp)		#save t7 procedure convention
+
+
+
+jal DisplayLedDigit
+
+#now do left digit
+MainLeftDigit:
+add $a0, $zero, $zero	#a0 <- 0 for left LED
+add $a1, $s5, $zero	#a1 <- the digit to be displayed for the left LED
+jal DisplayLedDigit
+
+#after doing right and left digit, add 1 to a, s6
+addi $s0, $s0, 1 	#a++
+
+#increment right. left will increment by itself. if right == 9, change it to 0 then add 1 to left, else add 1
+addi $t7, $zero, 9
+beq $s6, $t7, Skip		#check if right digit == 9 and go to Skip
+addi $s6, $s6, 1	#else increment right digit by 1
+j InsertDigits		#go back to beginning of loop
+Skip:
+add $s6,$zero,$zero	#9+1 = 10. Right digit = 0
+addi $s5,$s5,1		#left digit ++
+
+j InsertDigits		#go back to beginning of loop
+
+
+#b should be displayed on termination
+
+DisplayLedDigit: #this is a void function
+#We need to convert the binary number to a digital lab sim display digit
+addi $t1, $zero, 0
+beq $a1, $t1, Zero
+addi $t1, $zero, 1
+beq $a1, $t1, One
+addi $t1, $zero, 2
+beq $a1, $t1, Two
+addi $t1, $zero, 3
+beq $a1, $t1, Three
+addi $t1, $zero, 4
+beq $a1, $t1, Four
+addi $t1, $zero, 5
+beq $a1, $t1, Five
+addi $t1, $zero, 6
+beq $a1, $t1, Six
+addi $t1, $zero, 7
+beq $a1, $t1, Seven
+addi $t1, $zero, 8
+beq $a1, $t1, Eight
+addi $t1, $zero, 9
+beq $a1, $t1, Nine
+Zero: addi, $t1, $zero, 63
+j EndConversion
+One: addi, $t1, $zero, 6
+j EndConversion
+Two: addi, $t1, $zero, 91
+j EndConversion
+Three: addi, $t1, $zero, 79
+j EndConversion
+Four: addi, $t1, $zero, 102
+j EndConversion
+Five: addi, $t1, $zero, 109
+j EndConversion
+Six: addi, $t1, $zero, 125
+j EndConversion
+Seven: addi, $t1, $zero, 7
+j EndConversion
+Eight: addi, $t1, $zero, 127
+j EndConversion
+Nine: addi, $t1, $zero, 103
+j EndConversion
+
+EndConversion:
+beq $a0, $zero, LeftLED	#jump to leftLED if led == 0, else continue to right LED
+sb $t1, 0($s4)		#display right led
+jr $ra		#go back and set the settings for left digit before running the delayloop
+
+LeftLED: 
+addi $t7, $zero, 10	#$t7 <- 10
+slt $t7, $s0, $t7	#$t7 <- check if a < 10
+bne $s5, $zero, Continue  #if a < 10, do not store anything in t1.
+add $t1,$zero,$zero	#makes sure nothing is displayed on the left digit if you stop the MIPS program and run it again
+Continue: sb $t1, 0($s3)	#display leftLED		
+
+DelayLoopPrep:
+add $t0, $zero, $zero 	#initialize t0 to 0
+addi $t7, $zero, 300000 #t2 = 999,999 which is when we stop counting
+
+DelayLoop: #this is a while loop
+addi $t0, $t0, 1	#add 1 to t0
+add $t0, $t0, $zero	#doing stupid calculation to waste time
+add $t0, $t0, $zero	#doing stupid calculation to waste time
+add $t0, $t0, $zero	#doing stupid calculation to waste time
+add $t0, $t0, $zero	#doing stupid calculation to waste time
+add $t0, $t0, $zero	#doing stupid calculation to waste time
+bne $t0, $t7, DelayLoop	#loop until t0 == 199,999
+
+jr $ra			#after while loop completes, go back to AddDigits
+
+
+Exit:	
+li $v0,10 	#exit code
+syscall
